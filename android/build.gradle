@@ -1,6 +1,4 @@
-group 'app.begaz.obd.two.plugin.obd2_plugin'
-version '1.0.0' // Use semantic versioning
-
+// Place the buildscript block first (optional)
 buildscript {
     ext.kotlin_version = '1.9.20' // Updated Kotlin version
     repositories {
@@ -13,10 +11,15 @@ buildscript {
     }
 }
 
+// Then the plugins block
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
 }
+
+// Move 'group' and 'version' declarations after plugins {}
+group 'app.begaz.obd.two.plugin.obd2_plugin'
+version '1.0.0' // Use semantic versioning
 
 android {
     compileSdk 34 // Updated to Android 14
