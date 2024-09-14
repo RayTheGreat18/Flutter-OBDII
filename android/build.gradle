@@ -1,5 +1,5 @@
 group 'app.begaz.obd.two.plugin.obd2_plugin'
-version '1.0-SNAPSHOT'
+version '1.0.0' // Use semantic versioning
 
 buildscript {
     ext.kotlin_version = '1.9.20' // Updated Kotlin version
@@ -20,21 +20,21 @@ plugins {
 
 android {
     compileSdk 34 // Updated to Android 14
-    
+
     defaultConfig {
         minSdk 23 // Increased minimum SDK version
-        targetSdk 34 // Added target SDK
+        targetSdk 34 // Targeting Android 14
     }
-    
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
-    
+
     kotlinOptions {
         jvmTarget = '11'
     }
-    
+
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
