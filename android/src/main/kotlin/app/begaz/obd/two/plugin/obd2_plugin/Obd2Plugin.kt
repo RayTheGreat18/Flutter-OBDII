@@ -3,8 +3,8 @@ package app.begaz.obd.two.plugin.obd2_plugin
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import androidx.annotation.NonNull
-import androidx.core.app.ActivityCompat.startActivityForResult
-
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -21,11 +21,7 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware
 
 /** Obd2Plugin */
 class Obd2Plugin: FlutterPlugin, MethodCallHandler, ActivityAware {
-  /// The MethodChannel that will the communication between Flutter and native Android
-  ///
-  /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-  /// when the Flutter Engine is detached from the Activity
-  private lateinit var channel : MethodChannel
+  private lateinit var channel: MethodChannel
   private lateinit var activity: Activity
   private var bluetoothAdapter: BluetoothAdapter? = null
   private val REQUEST_ENABLE_BLUETOOTH: Int = 1337
@@ -33,43 +29,45 @@ class Obd2Plugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
   private var pendingResultForActivityResult: Result? = null
 
+  // New activity result launchers
+  private lateinit var enableBluetoothLauncher: ActivityResultLauncher<Intent>
+  private lateinit var discoverableBluetoothLauncher: ActivityResultLauncher<Intent>
+
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-      this.activity = binding.activity;
+      this.activity = binding.activity
       val bluetoothManager: BluetoothManager = activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-
-
       this.bluetoothAdapter = bluetoothManager.adapter
 
-      binding.addActivityResultListener { requestCode, resultCode, data ->
-          when (requestCode) {
-              REQUEST_ENABLE_BLUETOOTH -> {
-                  if (pendingResultForActivityResult != null) {
-                      pendingResultForActivityResult?.success(resultCode != 0)
-                  }
-                  return@addActivityResultListener true
-              }
-              REQUEST_DISCOVERABLE_BLUETOOTH -> {
-                  pendingResultForActivityResult?.success(if (resultCode == 0) -1 else resultCode)
-                  return@addActivityResultListener true
-              }
-              else -> return@addActivityResultListener false
+      // Register the new activity result API
+      enableBluetoothLauncher = activity.registerForActivityResult(
+          ActivityResultContracts.StartActivityForResult()
+      ) { result ->
+          if (pendingResultForActivityResult != null) {
+              pendingResultForActivityResult?.success(result.resultCode != 0)
           }
+      }
+
+      discoverableBluetoothLauncher = activity.registerForActivityResult(
+          ActivityResultContracts.StartActivityForResult()
+      ) { result ->
+          pendingResultForActivityResult?.success(if (result.resultCode == 0) -1 else result.resultCode)
       }
   }
 
-    override fun onDetachedFromActivityForConfigChanges() {
+  override fun onDetachedFromActivityForConfigChanges() {
+      // Handle activity detach due to configuration change if needed
+  }
 
-    }
+  override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+      // Handle re-attachment if necessary
+      onAttachedToActivity(binding)
+  }
 
-    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+  override fun onDetachedFromActivity() {
+      // Clean up any resources related to the activity
+  }
 
-    }
-
-    override fun onDetachedFromActivity() {
-
-    }
-
-    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+  override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "obd2_plugin")
     channel.setMethodCallHandler(this)
   }
@@ -80,18 +78,16 @@ class Obd2Plugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             if (bluetoothAdapter?.isEnabled != true) {
                 pendingResultForActivityResult = result
                 val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                startActivityForResult(activity, intent, REQUEST_ENABLE_BLUETOOTH, null)
+                enableBluetoothLauncher.launch(intent)
             } else {
                 result.success(true)
             }
-
-//          result.success("Android ${android.os.Build.VERSION.RELEASE}")
         }
         "getPlatformVersion" -> {
-          result.success("Android ${android.os.Build.VERSION.RELEASE}")
+            result.success("Android ${android.os.Build.VERSION.RELEASE}")
         }
         else -> {
-          result.notImplemented()
+            result.notImplemented()
         }
     }
   }
