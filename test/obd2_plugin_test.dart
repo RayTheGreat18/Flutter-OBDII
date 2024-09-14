@@ -17,7 +17,8 @@ void main() {
     channel.setMockMethodCallHandler(null);
   });
 
-  test('getPlatformVersion', () async {
+  test('getPlatformVersion returns correct version', () async {
+    // Test that the mocked platform version is returned as expected
     expect(await Obd2Plugin.platformVersion, '42');
   });
 }
